@@ -16,11 +16,13 @@ if (entered !== correctPassword) {
   document.body.innerHTML = "<h2>Access Denied</h2>";
 } else {
 
+  // Create layout
   document.body.innerHTML = `
     <h2>SOV Dashboard</h2>
     <canvas id="chart"></canvas>
   `;
 
+  // 📊 FETCH DATA
   fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vSXkEgJLWXGous-880Mu0iy5egeoJ6nmFp2QS-aPU0zMelxTvij8lXQwld85kGQA0aJzbmJ-NOGsa1Q/pub?gid=0&single=true&output=csv")
     .then(res => res.text())
     .then(csv => {
@@ -29,18 +31,20 @@ if (entered !== correctPassword) {
       const data = [];
 
       rows.forEach(r => {
-        const cols = r.split(",");
+        // ✅ Robust CSV split (handles commas inside text)
+        const cols = r.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
 
-        if (cols.length > 15) {
-          const brand = cols[0];
+        if (cols && cols.length > 15) {
+          const brand = cols[0].replace(/"/g, "");
 
-          // 🧠 CLEAN SOV VALUE
           let raw = cols[15];
 
           if (raw) {
-            raw = raw.replace(/%/g, "")      // remove %
-                     .replace(/,/g, "")      // remove commas
-                     .trim();
+            raw = raw
+              .replace(/%/g, "")   // remove %
+              .replace(/,/g, "")   // remove commas
+              .replace(/"/g, "")   // remove quotes
+              .trim();
 
             const sov = parseFloat(raw);
 
@@ -51,15 +55,16 @@ if (entered !== correctPassword) {
         }
       });
 
-      // 🔥 SORT DESCENDING
+      // 🔥 Sort highest SOV first
       data.sort((a, b) => b.sov - a.sov);
 
-      // 🔥 TAKE TOP 10
+      // 🔥 Take top 10
       const topData = data.slice(0, 10);
 
       const labels = topData.map(d => d.brand);
       const values = topData.map(d => d.sov);
 
+      // 📊 Render chart
       new Chart(document.getElementById("chart"), {
         type: 'bar',
         data: {
@@ -77,6 +82,10 @@ if (entered !== correctPassword) {
         }
       });
 
+    })
+    .catch(err => {
+      document.body.innerHTML += "<p>Error loading data</p>";
+      console.error(err);
     });
 }
 </script>
