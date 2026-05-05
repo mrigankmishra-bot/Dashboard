@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SOV Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body style="font-family: Arial; padding: 20px;">
+
+<script>
+// 🔐 PASSWORD
+const correctPassword = "PRSSOW";
+const entered = prompt("Enter password to view dashboard:");
+
+if (entered !== correctPassword) {
+  document.body.innerHTML = "<h2>Access Denied</h2>";
+} else {
+
+  document.body.innerHTML = `
+    <h2>SOV Dashboard</h2>
+    <canvas id="chart"></canvas>
+  `;
+
+  fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vSXkEgJLWXGous-880Mu0iy5egeoJ6nmFp2QS-aPU0zMelxTvij8lXQwld85kGQA0aJzbmJ-NOGsa1Q/pub?gid=0&single=true&output=csv")
+    .then(res => res.text())
+    .then(csv => {
+
+      const rows = csv.split("\n").slice(1);
+      const labels = [];
+      const values = [];
+
+      rows.forEach(r => {
+        const cols = r.split(",");
+        if (cols.length > 1) {
+          labels.push(cols[0]);        // Column 1 = Brand
+          values.push(Number(cols[1])); // Column 2 = SOV
+        }
+      });
+
+      new Chart(document.getElementById("chart"), {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'SOV',
+            data: values
+          }]
+        },
+        options: {
+          responsive: true
+        }
+      });
+
+    });
+}
+</script>
+
+</body>
+</html>
