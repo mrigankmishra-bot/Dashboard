@@ -23,7 +23,7 @@ if (entered !== correctPassword) {
   `;
 
   // 📊 FETCH DATA
-  fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vSXkEgJLWXGous-880Mu0iy5egeoJ6nmFp2QS-aPU0zMelxTvij8lXQwld85kGQA0aJzbmJ-NOGsa1Q/pub?gid=0&single=true&output=csv")
+  fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent("https://docs.google.com/spreadsheets/d/e/2PACX-1vSXkEgJLWXGous-880Mu0iy5egeoJ6nmFp2QS-aPU0zMelxTvij8lXQwld85kGQA0aJzbmJ-NOGsa1Q/pub?gid=0&single=true&output=csv"))
     .then(res => res.text())
     .then(csv => {
 
