@@ -1,89 +1,179 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>SOV Dashboard</title>
+  <title>JioHotstar Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #f5f7fb;
+    }
+
+    .header {
+      background: #1f3b6d;
+      color: white;
+      padding: 20px;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    .cards {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      flex: 1;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .card h3 {
+      margin: 0;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .card p {
+      font-size: 24px;
+      margin: 5px 0 0;
+      font-weight: bold;
+    }
+
+    .chart-box {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+    }
+  </style>
 </head>
 
-<body style="font-family: Arial; padding: 20px;">
+<body>
 
 <script>
 // 🔐 PASSWORD
 const correctPassword = "PRSSOW";
-const entered = prompt("Enter password to view dashboard:");
+const entered = prompt("Enter password:");
 
 if (entered !== correctPassword) {
-  document.body.innerHTML = "<h2>Access Denied</h2>";
+  document.body.innerHTML = "<h2 style='padding:20px'>Access Denied</h2>";
 } else {
 
-  // Create layout
   document.body.innerHTML = `
-    <h2>SOV Dashboard</h2>
-    <canvas id="chart"></canvas>
+    <div class="header">JIOHOTSTAR Sales Dashboard</div>
+
+    <div class="container">
+      <div class="cards">
+        <div class="card">
+          <h3>YT SALES</h3>
+          <p id="ytSales">--</p>
+        </div>
+
+        <div class="card">
+          <h3>TV SALES</h3>
+          <p id="tvSales">--</p>
+        </div>
+
+        <div class="card">
+          <h3>JHS SALES</h3>
+          <p id="jhsSales">--</p>
+        </div>
+
+        <div class="card">
+          <h3>BLENDED SOW</h3>
+          <p id="sow">--</p>
+        </div>
+      </div>
+
+      <div class="chart-box">
+        <h3>SOW % by Brand</h3>
+        <canvas id="chart"></canvas>
+      </div>
+    </div>
   `;
 
-  // 📊 FETCH DATA
-  <script>
-const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXkEgJLWXGous-880Mu0iy5egeoJ6nmFp2QS-aPU0zMelxTvij8lXQwld85kGQA0aJzbmJ-NOGsa1Q/pub?gid=0&single=true&output=csv";
+  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXkEgJLWXGous-880Mu0iy5egeoJ6nmFp2QS-aPU0zMelxTvij8lXQwld85kGQA0aJzbmJ-NOGsa1Q/pub?gid=0&single=true&output=csv";
 
-fetch(url, { cache: "no-store" })
-  .then(response => {
-    if (!response.ok) throw new Error("Network error");
-    return response.text();
-  })
-  .then(csv => {
+  fetch(url)
+    .then(res => res.text())
+    .then(csv => {
 
-    const rows = csv.split("\n").slice(1);
-    const data = [];
+      const rows = csv.split("\n").slice(1);
+      const data = [];
 
-    rows.forEach(r => {
-      const cols = r.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
+      let totalYT = 0;
+      let totalTV = 0;
+      let totalRev = 0;
+      let totalAdex = 0;
 
-      if (cols && cols.length > 15) {
-        const brand = cols[0].replace(/"/g, "");
+      rows.forEach(r => {
+        const cols = r.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
 
-        let raw = cols[15];
-        if (raw) {
-          raw = raw.replace(/%/g, "")
-                   .replace(/,/g, "")
-                   .replace(/"/g, "")
-                   .trim();
+        if (cols && cols.length > 15) {
 
-          const sov = parseFloat(raw);
+          const brand = cols[0].replace(/"/g, "");
 
-          if (!isNaN(sov) && brand) {
-            data.push({ brand, sov });
+          const yt = parseFloat(cols[10]?.replace(/,/g,"")) || 0;
+          const tv = parseFloat(cols[11]?.replace(/,/g,"")) || 0;
+          const rev = parseFloat(cols[13]?.replace(/,/g,"")) || 0;
+          const adex = parseFloat(cols[14]?.replace(/,/g,"")) || 0;
+
+          let sow = cols[15];
+
+          if (sow) {
+            sow = parseFloat(
+              sow.replace(/%/g,"").replace(/,/g,"").replace(/"/g,"")
+            );
+          }
+
+          if (!isNaN(sow)) {
+            data.push({ brand, sow });
+          }
+
+          totalYT += yt;
+          totalTV += tv;
+          totalRev += rev;
+          totalAdex += adex;
+      }});
+
+      // KPIs
+      document.getElementById("ytSales").innerText = totalYT.toFixed(1) + " Cr";
+      document.getElementById("tvSales").innerText = totalTV.toFixed(1) + " Cr";
+      document.getElementById("jhsSales").innerText = totalRev.toFixed(1) + " Cr";
+      document.getElementById("sow").innerText =
+        ((totalRev / totalAdex) * 100).toFixed(1) + "%";
+
+      // Chart
+      data.sort((a,b) => b.sow - a.sow);
+      const top = data.slice(0,10);
+
+      new Chart(document.getElementById("chart"), {
+        type: 'bar',
+        data: {
+          labels: top.map(d => d.brand),
+          datasets: [{
+            data: top.map(d => d.sow)
+          }]
+        },
+        options: {
+          plugins: { legend: { display:false }},
+          scales: {
+            x: { ticks: { color:"#333" }},
+            y: { beginAtZero:true }
           }
         }
-      }
+      });
+
     });
-
-    if (data.length === 0) {
-      throw new Error("No data parsed");
-    }
-
-    data.sort((a, b) => b.sov - a.sov);
-    const topData = data.slice(0, 10);
-
-    const labels = topData.map(d => d.brand);
-    const values = topData.map(d => d.sov);
-
-    new Chart(document.getElementById("chart"), {
-      type: 'bar',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'SOV',
-          data: values
-        }]
-      }
-    });
-
-  })
-  .catch(err => {
-    document.body.innerHTML += "<p style='color:red'>Error: " + err.message + "</p>";
-    console.error(err);
-  });
+}
 </script>
 
 </body>
