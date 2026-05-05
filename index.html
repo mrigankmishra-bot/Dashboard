@@ -1,89 +1,97 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>JioHotstar Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body { margin:0; font-family: Arial; background:#f5f7fb; }
-    .header { background:#1f3b6d; color:white; padding:16px 24px; font-size:22px; }
-    .container { padding:20px; }
+<title>JioHotstar Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    .filters, .cards { display:flex; gap:15px; margin-bottom:20px; }
-    select { padding:8px; border-radius:6px; }
+<style>
+body {margin:0;font-family:Arial;background:#eef2f7;}
+.header {background:#274472;color:white;padding:20px;font-size:22px;font-weight:bold;}
 
-    .card {
-      flex:1; background:white; padding:15px;
-      border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,0.1);
-    }
-    .card h4 { margin:0; color:#777; font-size:12px; }
-    .card p { margin:5px 0 0; font-size:22px; font-weight:bold; }
+.filters {display:flex;gap:10px;padding:15px;}
+select {padding:8px;border-radius:6px;border:1px solid #ccc;}
 
-    .chart-box {
-      background:white; padding:20px;
-      border-radius:10px;
-    }
-  </style>
+.cards {display:flex;gap:15px;padding:0 15px;}
+.card {
+  flex:1;background:white;padding:15px;border-radius:10px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.1);
+}
+.card h4 {margin:0;color:#666;font-size:12px;}
+.card p {margin:5px 0 0;font-size:22px;font-weight:bold;}
+
+.bucket-row {
+  display:flex;gap:15px;padding:15px;
+}
+.bucket {
+  flex:1;color:white;padding:15px;border-radius:10px;
+}
+.green {background:#1f9d55;}
+.orange {background:#f59e0b;}
+.red {background:#ef4444;}
+
+.chart-box {
+  margin:15px;background:white;padding:20px;border-radius:10px;
+}
+</style>
 </head>
 
 <body>
 
 <script>
-const PASSWORD = "PRSSOW";
-if (prompt("Enter password") !== PASSWORD) {
-  document.body.innerHTML = "<h2 style='padding:20px'>Access Denied</h2>";
+if (prompt("Enter password") !== "PRSSOW") {
+  document.body.innerHTML = "Access Denied";
 } else {
 
 document.body.innerHTML = `
 <div class="header">JIOHOTSTAR Sales Dashboard</div>
 
-<div class="container">
-
 <div class="filters">
-  <select id="leader"></select>
-  <select id="rh"></select>
-  <select id="ad"></select>
-  <select id="kam"></select>
+<select id="leader"></select>
+<select id="rh"></select>
+<select id="ad"></select>
+<select id="kam"></select>
 </div>
 
 <div class="cards">
-  <div class="card"><h4>YT SALES</h4><p id="yt"></p></div>
-  <div class="card"><h4>TV SALES</h4><p id="tv"></p></div>
-  <div class="card"><h4>JHS SALES</h4><p id="rev"></p></div>
-  <div class="card"><h4>BLENDED SOW</h4><p id="sow"></p></div>
+<div class="card"><h4>YT SALES</h4><p id="yt"></p></div>
+<div class="card"><h4>TV SALES</h4><p id="tv"></p></div>
+<div class="card"><h4>JHS SALES</h4><p id="rev"></p></div>
+<div class="card"><h4>BLENDED SOW</h4><p id="sow"></p></div>
+</div>
+
+<div class="bucket-row">
+<div class="bucket green"><b>STRONG (>15%)</b><br><span id="strong"></span></div>
+<div class="bucket orange"><b>MODERATE (5–15%)</b><br><span id="moderate"></span></div>
+<div class="bucket red"><b>LOW (<5%)</b><br><span id="low"></span></div>
 </div>
 
 <div class="chart-box">
-  <h3>SOW % by Client</h3>
-  <canvas id="chart"></canvas>
-</div>
-
+<h3>SOW % by Client</h3>
+<canvas id="chart"></canvas>
 </div>
 `;
 
 const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSXkEgJLWXGous-880Mu0iy5egeoJ6nmFp2QS-aPU0zMelxTvij8lXQwld85kGQA0aJzbmJ-NOGsa1Q/pub?gid=0&single=true&output=csv";
 
-let rawData = [];
+let raw = [];
 
-fetch(url)
-.then(r => r.text())
-.then(csv => {
-
+fetch(url).then(r=>r.text()).then(csv=>{
   const rows = csv.split("\n").slice(1);
 
-  rows.forEach(r => {
+  rows.forEach(r=>{
     const c = r.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
-    if (!c || c.length < 16) return;
+    if (!c || c.length<16) return;
 
-    rawData.push({
-      adv: c[0],
-      leader: c[4],
-      rh: c[5],
-      ad: c[6],
-      kam: c[7],
-      yt: parseFloat(c[10]?.replace(/,/g,"")) || 0,
-      tv: parseFloat(c[11]?.replace(/,/g,"")) || 0,
-      rev: parseFloat(c[13]?.replace(/,/g,"")) || 0,
-      adex: parseFloat(c[14]?.replace(/,/g,"")) || 0
+    raw.push({
+      adv:c[0],
+      leader:c[4],
+      rh:c[5],
+      ad:c[6],
+      kam:c[7],
+      yt:+c[10].replace(/,/g,"")||0,
+      tv:+c[11].replace(/,/g,"")||0,
+      rev:+c[13].replace(/,/g,"")||0,
+      adex:+c[14].replace(/,/g,"")||0
     });
   });
 
@@ -91,84 +99,92 @@ fetch(url)
   update();
 });
 
-function initFilters() {
-  populate("leader", "leader");
-  populate("rh", "rh");
-  populate("ad", "ad");
-  populate("kam", "kam");
-
-  document.querySelectorAll("select").forEach(s => {
-    s.onchange = update;
-  });
+function initFilters(){
+  fill("leader","leader");
+  fill("rh","rh");
+  fill("ad","ad");
+  fill("kam","kam");
+  document.querySelectorAll("select").forEach(s=>s.onchange=update);
 }
 
-function populate(id, key) {
-  const sel = document.getElementById(id);
-  const vals = [...new Set(rawData.map(d => d[key]).filter(Boolean))];
-
-  sel.innerHTML = "<option value='all'>All</option>" +
-    vals.map(v => `<option>${v}</option>`).join("");
+function fill(id,key){
+  const vals=[...new Set(raw.map(d=>d[key]).filter(Boolean))];
+  document.getElementById(id).innerHTML =
+    "<option value='all'>All</option>" +
+    vals.map(v=>`<option>${v}</option>`).join("");
 }
 
-function update() {
-
+function update(){
   const f = {
-    leader: leader.value,
-    rh: rh.value,
-    ad: ad.value,
-    kam: kam.value
+    leader:leader.value,
+    rh:rh.value,
+    ad:ad.value,
+    kam:kam.value
   };
 
-  const data = rawData.filter(d =>
+  const data = raw.filter(d =>
     (f.leader==="all"||d.leader===f.leader) &&
     (f.rh==="all"||d.rh===f.rh) &&
     (f.ad==="all"||d.ad===f.ad) &&
     (f.kam==="all"||d.kam===f.kam)
   );
 
-  let yt=0, tv=0, rev=0, adex=0;
+  let yt=0,tv=0,rev=0,adex=0;
+  const map={};
 
-  data.forEach(d => {
+  data.forEach(d=>{
     yt+=d.yt; tv+=d.tv; rev+=d.rev; adex+=d.adex;
+
+    if(!map[d.adv]) map[d.adv]={rev:0,adex:0};
+    map[d.adv].rev+=d.rev;
+    map[d.adv].adex+=d.adex;
   });
 
-  document.getElementById("yt").innerText = yt.toFixed(1)+" Cr";
-  document.getElementById("tv").innerText = tv.toFixed(1)+" Cr";
-  document.getElementById("rev").innerText = rev.toFixed(1)+" Cr";
-  document.getElementById("sow").innerText =
-    (adex ? (rev/adex*100).toFixed(1) : 0) + "%";
+  document.getElementById("yt").innerText=yt.toFixed(1)+" Cr";
+  document.getElementById("tv").innerText=tv.toFixed(1)+" Cr";
+  document.getElementById("rev").innerText=rev.toFixed(1)+" Cr";
+  document.getElementById("sow").innerText=(rev/adex*100||0).toFixed(1)+"%";
 
-  // group by client
-  const map = {};
-  data.forEach(d => {
-    if (!map[d.adv]) map[d.adv] = {rev:0, adex:0};
-    map[d.adv].rev += d.rev;
-    map[d.adv].adex += d.adex;
-  });
-
-  const arr = Object.entries(map).map(([k,v]) => ({
+  const arr=Object.entries(map).map(([k,v])=>({
     name:k,
-    sow: v.adex ? v.rev/v.adex*100 : 0
+    sow:v.adex? v.rev/v.adex*100:0
   }));
 
+  let strong=0,moderate=0,low=0;
+
+  arr.forEach(d=>{
+    if(d.sow>15) strong++;
+    else if(d.sow>=5) moderate++;
+    else low++;
+  });
+
+  document.getElementById("strong").innerText=strong+" clients";
+  document.getElementById("moderate").innerText=moderate+" clients";
+  document.getElementById("low").innerText=low+" clients";
+
   arr.sort((a,b)=>b.sow-a.sow);
-  const top = arr.slice(0,10);
+  const top=arr.slice(0,10);
 
-  if (window.chart) window.chart.destroy();
+  if(window.chart) chart.destroy();
 
-  window.chart = new Chart(document.getElementById("chart"), {
+  window.chart=new Chart(chart,{
     type:"bar",
     data:{
-      labels: top.map(d=>d.name),
-      datasets:[{ data: top.map(d=>d.sow) }]
+      labels:top.map(d=>d.name),
+      datasets:[{
+        data:top.map(d=>d.sow),
+        backgroundColor:top.map(d=>
+          d.sow>15?"#22c55e":
+          d.sow>=5?"#f59e0b":"#ef4444")
+      }]
     },
     options:{
+      indexAxis:'y',
       plugins:{legend:{display:false}},
-      scales:{y:{beginAtZero:true}}
+      scales:{x:{beginAtZero:true}}
     }
   });
 }
-
 }
 </script>
 
